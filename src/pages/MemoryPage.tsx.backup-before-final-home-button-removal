@@ -1,0 +1,967 @@
+import { useEffect, useMemo, useState } from 'react'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Brain,
+  Check,
+  ChevronDown,
+  Clock3,
+  Database,
+  FileText,
+  FolderOpen,
+  Lightbulb,
+  Lock,
+  MessageSquare,
+  Search,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Tag,
+  Trash2,
+  User,
+  X,
+} from 'lucide-react'
+import {
+  useMemoryStore,
+  type MemoryItem,
+  type MemoryType,
+} from '../store/memory'
+import { useNavigationStore } from '../store/navigation'
+
+const initialMemories: MemoryItem[] = [
+  {
+    id: 'memory-1',
+    title: 'Development preference',
+    content:
+      'Prefer complete updated files when changing project code and keep the project buildable after every step.',
+    type: 'Preference',
+    source: 'Nexus Conversation',
+    created: 'Today',
+    tags: ['development', 'workflow'],
+    important: true,
+  },
+  {
+    id: 'memory-2',
+    title: 'Nexus AI project',
+    content:
+      'Nexus AI is being developed as a modular AI assistant with a professional futuristic interface.',
+    type: 'Fact',
+    source: 'Nexus Conversation',
+    created: 'Today',
+    tags: ['nexus', 'project'],
+    important: true,
+  },
+  {
+    id: 'memory-3',
+    title: 'Frontend architecture',
+    content:
+      'The frontend currently uses React, TypeScript, Vite, Tailwind CSS, Zustand, Framer Motion and Lucide icons.',
+    type: 'Fact',
+    source: 'Project Workspace',
+    created: 'Today',
+    tags: ['frontend', 'react', 'typescript'],
+    important: true,
+  },
+  {
+    id: 'memory-4',
+    title: 'Voice interface',
+    content:
+      'The Voice workspace supports browser speech recognition with English and Hindi language options.',
+    type: 'Fact',
+    source: 'Voice Workspace',
+    created: 'Today',
+    tags: ['voice', 'speech'],
+    important: false,
+  },
+  {
+    id: 'memory-5',
+    title: 'Recent coding task',
+    content:
+      'Connect the Home dashboard composer so a submitted message opens inside the Chat workspace.',
+    type: 'Task',
+    source: 'Nexus Conversation',
+    created: 'Today',
+    tags: ['chat', 'navigation'],
+    important: true,
+  },
+  {
+    id: 'memory-6',
+    title: 'Dashboard preference',
+    content:
+      'The Nexus interface uses a dark glassmorphism visual system with violet, blue and cyan accents.',
+    type: 'Preference',
+    source: 'Design System',
+    created: 'Yesterday',
+    tags: ['design', 'ui'],
+    important: false,
+  },
+]
+
+const memoryTypes: Array<{
+  label: MemoryType
+  icon: typeof Brain
+}> = [
+  { label: 'Conversation', icon: MessageSquare },
+  { label: 'Preference', icon: User },
+  { label: 'Fact', icon: Lightbulb },
+  { label: 'Task', icon: Check },
+  { label: 'Note', icon: FileText },
+]
+
+const navigation = [
+  { label: 'Chat', icon: MessageSquare, view: 'chat' as const },
+  { label: 'Voice', icon: Brain, view: 'voice' as const },
+  { label: 'Vision', icon: FolderOpen },
+  { label: 'Automation', icon: Sparkles },
+  { label: 'Memory', icon: Brain, active: true },
+  { label: 'Planner', icon: FileText },
+  { label: 'Devices', icon: Database },
+  { label: 'Plugins', icon: Tag },
+  { label: 'Skills', icon: Lightbulb },
+  { label: 'Files', icon: FolderOpen },
+  { label: 'Analytics', icon: Database },
+]
+
+const typeStyles: Record<
+  MemoryType,
+  {
+    icon: typeof Brain
+    iconClass: string
+    badgeClass: string
+    accentClass: string
+  }
+> = {
+  Conversation: {
+    icon: MessageSquare,
+    iconClass: 'bg-blue-500/10 text-blue-300',
+    badgeClass:
+      'border-blue-400/10 bg-blue-500/[0.06] text-blue-300',
+    accentClass: 'bg-blue-400',
+  },
+  Preference: {
+    icon: User,
+    iconClass: 'bg-violet-500/10 text-violet-300',
+    badgeClass:
+      'border-violet-400/10 bg-violet-500/[0.06] text-violet-300',
+    accentClass: 'bg-violet-400',
+  },
+  Fact: {
+    icon: Lightbulb,
+    iconClass: 'bg-cyan-500/10 text-cyan-300',
+    badgeClass:
+      'border-cyan-400/10 bg-cyan-500/[0.06] text-cyan-300',
+    accentClass: 'bg-cyan-400',
+  },
+  Task: {
+    icon: Check,
+    iconClass: 'bg-emerald-500/10 text-emerald-300',
+    badgeClass:
+      'border-emerald-400/10 bg-emerald-500/[0.06] text-emerald-300',
+    accentClass: 'bg-emerald-400',
+  },
+  Note: {
+    icon: FileText,
+    iconClass: 'bg-amber-500/10 text-amber-300',
+    badgeClass:
+      'border-amber-400/10 bg-amber-500/[0.06] text-amber-300',
+    accentClass: 'bg-amber-400',
+  },
+}
+
+export default function MemoryPage() {
+  const setCurrentView = useNavigationStore(
+    (state) => state.setCurrentView,
+  )
+
+  const memories = useMemoryStore((state) => state.memories)
+  const selectedMemoryId = useMemoryStore(
+    (state) => state.selectedMemoryId,
+  )
+  const searchQuery = useMemoryStore(
+    (state) => state.searchQuery,
+  )
+  const selectedType = useMemoryStore(
+    (state) => state.selectedType,
+  )
+
+  const setMemories = useMemoryStore(
+    (state) => state.setMemories,
+  )
+  const setSelectedMemoryId = useMemoryStore(
+    (state) => state.setSelectedMemoryId,
+  )
+  const setSearchQuery = useMemoryStore(
+    (state) => state.setSearchQuery,
+  )
+  const setSelectedType = useMemoryStore(
+    (state) => state.setSelectedType,
+  )
+  const clearFilters = useMemoryStore(
+    (state) => state.clearFilters,
+  )
+  const deleteMemory = useMemoryStore(
+    (state) => state.deleteMemory,
+  )
+
+  const [showTypes, setShowTypes] = useState(false)
+  const [memoryPendingDelete, setMemoryPendingDelete] =
+    useState<MemoryItem | null>(null)
+
+  useEffect(() => {
+    if (memories.length === 0) {
+      setMemories(initialMemories)
+    }
+  }, [memories.length, setMemories])
+
+  const filteredMemories = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+
+    return memories.filter((memory) => {
+      const matchesType =
+        selectedType === 'All' || memory.type === selectedType
+
+      if (!query) {
+        return matchesType
+      }
+
+      const haystack = [
+        memory.title,
+        memory.content,
+        memory.source,
+        memory.tags.join(' '),
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      return matchesType && haystack.includes(query)
+    })
+  }, [memories, searchQuery, selectedType])
+
+  const selectedMemory =
+    memories.find(
+      (memory) => memory.id === selectedMemoryId,
+    ) ?? filteredMemories[0]
+
+  const activeFilterCount =
+    Number(Boolean(searchQuery.trim())) +
+    Number(selectedType !== 'All')
+
+  const importantCount = memories.filter(
+    (memory) => memory.important,
+  ).length
+
+  const typeCount = (type: MemoryType) =>
+    memories.filter((memory) => memory.type === type).length
+
+  const goHome = () => {
+    setCurrentView('home')
+  }
+
+  const confirmDelete = () => {
+    if (!memoryPendingDelete) {
+      return
+    }
+
+    deleteMemory(memoryPendingDelete.id)
+    setMemoryPendingDelete(null)
+  }
+
+  return (
+    <div className="relative z-[1] min-h-screen w-full overflow-hidden bg-[#030712] text-slate-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_20%,rgba(124,58,237,0.13),transparent_28%),radial-gradient(circle_at_75%_75%,rgba(6,182,212,0.07),transparent_30%)]" />
+
+      <div className="relative flex min-h-screen">
+        
+
+        <main className="min-w-0 flex-1">
+          <header className="flex h-[70px] items-center gap-4 border-b border-white/[0.06] px-4 sm:px-6 lg:px-8">
+            <button
+              onClick={goHome}
+              aria-label="Back to Home"
+              className="flex h-9 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-xs text-slate-400 transition-all hover:border-violet-400/25 hover:bg-violet-500/[0.04] hover:text-white"
+            >
+              <ArrowLeft size={16} />
+              <span className="hidden sm:inline">Home</span>
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-300">
+                <Brain size={18} />
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-white">
+                  Memory
+                </p>
+                <p className="text-[10px] text-slate-600">
+                  Persistent intelligence
+                </p>
+              </div>
+            </div>
+
+            <div className="ml-auto flex items-center gap-2">
+              <div className="hidden items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[10px] text-slate-500 sm:flex">
+                <Database size={13} />
+                {memories.length} stored items
+              </div>
+
+              <button
+                aria-label="Memory settings"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-slate-500 transition hover:border-white/[0.12] hover:bg-white/[0.04] hover:text-white"
+              >
+                <Settings size={16} />
+              </button>
+            </div>
+          </header>
+
+          <div className="h-[calc(100vh-70px)] overflow-y-auto">
+            <div className="mx-auto max-w-[1450px] px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+              <section className="mb-5">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-cyan-300/70">
+                      Persistent intelligence
+                    </p>
+
+                    <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
+                      Nexus Memory
+                    </h1>
+
+                    <p className="mt-2 max-w-[700px] text-sm leading-6 text-slate-500">
+                      Review, search and manage the information
+                      Nexus keeps available for future
+                      conversations.
+                    </p>
+                  </div>
+
+                  <div className="hidden rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 sm:block">
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                      </span>
+
+                      <span className="text-[10px] text-slate-500">
+                        Memory system online
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="group rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4 transition-colors hover:border-violet-400/15">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+                      <Brain size={19} />
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-500">
+                        Total Memories
+                      </p>
+                      <p className="mt-0.5 text-xl font-medium text-white">
+                        {memories.length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="group rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4 transition-colors hover:border-amber-400/15">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-300">
+                      <Sparkles size={19} />
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-500">
+                        Important
+                      </p>
+                      <p className="mt-0.5 text-xl font-medium text-white">
+                        {importantCount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="group rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4 transition-colors hover:border-cyan-400/15">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300">
+                      <Database size={19} />
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-500">
+                        Active Context
+                      </p>
+                      <p className="mt-0.5 text-xl font-medium text-white">
+                        84%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="group rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4 transition-colors hover:border-emerald-400/15">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
+                      <ShieldCheck size={19} />
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-500">
+                        Storage Status
+                      </p>
+                      <p className="mt-0.5 text-xl font-medium text-white">
+                        Protected
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="mt-4 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_390px]">
+                <div className="min-w-0 rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="relative min-w-0 flex-1">
+                      <Search
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                      />
+
+                      <input
+                        aria-label="Search memories"
+                        value={searchQuery}
+                        onChange={(event) =>
+                          setSearchQuery(event.target.value)
+                        }
+                        placeholder="Search memories, tags, sources..."
+                        className="h-11 w-full rounded-xl border border-white/[0.07] bg-white/[0.02] pl-9 pr-9 text-xs text-white outline-none transition-all placeholder:text-slate-600 focus:border-violet-400/30 focus:bg-violet-500/[0.025]"
+                      />
+
+                      {searchQuery && (
+                        <button
+                          aria-label="Clear memory search"
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-600 transition hover:bg-white/[0.05] hover:text-slate-300"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <button
+                        aria-haspopup="listbox"
+                        aria-expanded={showTypes}
+                        onClick={() =>
+                          setShowTypes((current) => !current)
+                        }
+                        className={`flex h-11 min-w-[170px] items-center justify-between gap-3 rounded-xl border px-3 text-xs transition-all ${
+                          selectedType !== 'All'
+                            ? 'border-violet-400/25 bg-violet-500/[0.06] text-violet-200'
+                            : 'border-white/[0.07] bg-white/[0.02] text-slate-300 hover:border-white/[0.11]'
+                        }`}
+                      >
+                        <span>
+                          {selectedType === 'All'
+                            ? 'All memory types'
+                            : selectedType}
+                        </span>
+
+                        <ChevronDown
+                          size={15}
+                          className={`text-slate-600 transition-transform ${
+                            showTypes ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
+
+                      {showTypes && (
+                        <div className="absolute right-0 top-12 z-30 w-[220px] overflow-hidden rounded-xl border border-white/[0.08] bg-[#09132c] p-1 shadow-2xl shadow-black/40">
+                          <button
+                            onClick={() => {
+                              setSelectedType('All')
+                              setShowTypes(false)
+                            }}
+                            className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
+                          >
+                            <span>All memory types</span>
+
+                            {selectedType === 'All' && (
+                              <Check
+                                size={14}
+                                className="text-cyan-300"
+                              />
+                            )}
+                          </button>
+
+                          {memoryTypes.map(
+                            ({
+                              label,
+                              icon: TypeIcon,
+                            }) => (
+                              <button
+                                key={label}
+                                onClick={() => {
+                                  setSelectedType(label)
+                                  setShowTypes(false)
+                                }}
+                                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <TypeIcon size={13} />
+                                  {label}
+                                </span>
+
+                                {label === selectedType && (
+                                  <Check
+                                    size={14}
+                                    className="text-cyan-300"
+                                  />
+                                )}
+                              </button>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex min-h-6 items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] text-slate-600">
+                        {filteredMemories.length} of{' '}
+                        {memories.length} memories
+                      </span>
+
+                      {activeFilterCount > 0 && (
+                        <span className="rounded-md border border-violet-400/10 bg-violet-500/[0.06] px-1.5 py-0.5 text-[8px] text-violet-300">
+                          {activeFilterCount}{' '}
+                          {activeFilterCount === 1
+                            ? 'filter'
+                            : 'filters'}{' '}
+                          active
+                        </span>
+                      )}
+                    </div>
+
+                    {activeFilterCount > 0 && (
+                      <button
+                        onClick={clearFilters}
+                        className="text-[10px] text-slate-600 transition hover:text-violet-300"
+                      >
+                        Clear filters
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {filteredMemories.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-white/[0.08] px-4 py-12 text-center">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+                          <Search
+                            size={21}
+                            className="text-slate-700"
+                          />
+                        </div>
+
+                        <p className="mt-4 text-sm font-medium text-slate-400">
+                          No memories found
+                        </p>
+
+                        <p className="mx-auto mt-1 max-w-[280px] text-[10px] leading-5 text-slate-700">
+                          {searchQuery.trim()
+                            ? `Nothing matches "${searchQuery.trim()}".`
+                            : 'No memories match the selected type.'}
+                        </p>
+
+                        {activeFilterCount > 0 && (
+                          <button
+                            onClick={clearFilters}
+                            className="mt-4 rounded-lg border border-violet-400/15 bg-violet-500/[0.06] px-3 py-2 text-[10px] text-violet-300 transition hover:bg-violet-500/[0.1]"
+                          >
+                            Clear filters
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      filteredMemories.map((memory) => {
+                        const style =
+                          typeStyles[memory.type]
+                        const TypeIcon = style.icon
+                        const isSelected =
+                          memory.id === selectedMemoryId
+
+                        return (
+                          <button
+                            key={memory.id}
+                            onClick={() =>
+                              setSelectedMemoryId(memory.id)
+                            }
+                            className={`group relative w-full overflow-hidden rounded-xl border p-4 text-left transition-all duration-200 ${
+                              isSelected
+                                ? 'border-violet-400/25 bg-violet-500/[0.07] shadow-[0_8px_30px_rgba(124,58,237,0.07)]'
+                                : 'border-white/[0.06] bg-white/[0.015] hover:border-white/[0.11] hover:bg-white/[0.025]'
+                            }`}
+                          >
+                            <span
+                              className={`absolute bottom-3 left-0 top-3 w-px rounded-full opacity-0 transition-opacity ${
+                                style.accentClass
+                              } ${
+                                isSelected
+                                  ? 'opacity-100'
+                                  : 'group-hover:opacity-60'
+                              }`}
+                            />
+
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.iconClass}`}
+                              >
+                                <TypeIcon size={17} />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2 pr-2">
+                                  <p className="truncate text-xs font-medium text-slate-200">
+                                    {memory.title}
+                                  </p>
+
+                                  {memory.important && (
+                                    <span className="rounded-md border border-amber-400/10 bg-amber-400/[0.06] px-1.5 py-0.5 text-[8px] font-medium text-amber-300">
+                                      Important
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-slate-500">
+                                  {memory.content}
+                                </p>
+
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                  <span
+                                    className={`rounded-md border px-1.5 py-0.5 text-[8px] ${style.badgeClass}`}
+                                  >
+                                    {memory.type}
+                                  </span>
+
+                                  {memory.tags
+                                    .slice(0, 4)
+                                    .map((tag) => (
+                                      <span
+                                        key={tag}
+                                        className="flex items-center gap-1 text-[8px] text-slate-700"
+                                      >
+                                        <Tag size={9} />
+                                        {tag}
+                                      </span>
+                                    ))}
+
+                                  {memory.tags.length > 4 && (
+                                    <span className="text-[8px] text-slate-700">
+                                      +{memory.tags.length - 4}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
+                                <span className="text-[9px] text-slate-700">
+                                  {memory.created}
+                                </span>
+
+                                {isSelected && (
+                                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-violet-300 shadow-[0_0_8px_rgba(167,139,250,0.8)]" />
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <aside className="space-y-4">
+                  {selectedMemory ? (
+                    <div className="rounded-2xl border border-white/[0.08] bg-slate-950/55 p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              const style =
+                                typeStyles[selectedMemory.type]
+                              const TypeIcon = style.icon
+
+                              return (
+                                <div
+                                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${style.iconClass}`}
+                                >
+                                  <TypeIcon size={15} />
+                                </div>
+                              )
+                            })()}
+
+                            <div className="min-w-0">
+                              <p className="text-[9px] uppercase tracking-[0.18em] text-slate-600">
+                                Memory detail
+                              </p>
+                              <span
+                                className={`mt-1 inline-flex rounded-md border px-1.5 py-0.5 text-[8px] ${
+                                  typeStyles[
+                                    selectedMemory.type
+                                  ].badgeClass
+                                }`}
+                              >
+                                {selectedMemory.type}
+                              </span>
+                            </div>
+                          </div>
+
+                          <h2 className="mt-4 text-lg font-medium leading-6 text-white">
+                            {selectedMemory.title}
+                          </h2>
+                        </div>
+
+                        <button
+                          aria-label="Delete memory"
+                          onClick={() =>
+                            setMemoryPendingDelete(
+                              selectedMemory,
+                            )
+                          }
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-red-500/10 hover:text-red-300"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+
+                      {selectedMemory.important && (
+                        <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber-400/10 bg-amber-400/[0.045] px-3 py-2">
+                          <Sparkles
+                            size={13}
+                            className="text-amber-300"
+                          />
+
+                          <span className="text-[10px] text-amber-200/80">
+                            Marked as important context
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
+                        <p className="text-xs leading-6 text-slate-400">
+                          {selectedMemory.content}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className="rounded-xl border border-white/[0.05] bg-white/[0.015] p-3">
+                          <p className="text-[9px] text-slate-700">
+                            Source
+                          </p>
+
+                          <p className="mt-1 truncate text-xs text-slate-300">
+                            {selectedMemory.source}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-white/[0.05] bg-white/[0.015] p-3">
+                          <p className="text-[9px] text-slate-700">
+                            Created
+                          </p>
+
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-300">
+                            <Clock3 size={11} />
+                            {selectedMemory.created}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 rounded-xl border border-white/[0.05] bg-white/[0.015] p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[9px] text-slate-700">
+                            Tags
+                          </p>
+
+                          <Tag
+                            size={11}
+                            className="text-slate-700"
+                          />
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {selectedMemory.tags.length > 0 ? (
+                            selectedMemory.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-lg border border-violet-400/10 bg-violet-500/[0.05] px-2 py-1 text-[9px] text-violet-300"
+                              >
+                                #{tag}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[9px] text-slate-700">
+                              No tags
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-white/[0.08] bg-slate-950/35 p-8 text-center">
+                      <Brain
+                        size={22}
+                        className="mx-auto text-slate-700"
+                      />
+
+                      <p className="mt-3 text-xs text-slate-500">
+                        Select a memory
+                      </p>
+
+                      <p className="mt-1 text-[10px] leading-5 text-slate-700">
+                        Choose an item from the memory collection
+                        to inspect its details.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl border border-white/[0.07] bg-slate-950/45 p-4">
+                    <div className="flex items-center gap-2">
+                      <Database
+                        size={15}
+                        className="text-violet-300"
+                      />
+
+                      <p className="text-xs font-medium text-slate-300">
+                        Memory categories
+                      </p>
+                    </div>
+
+                    <div className="mt-3 space-y-1.5">
+                      {memoryTypes.map(
+                        ({ label, icon: TypeIcon }) => {
+                          const count = typeCount(label)
+
+                          return (
+                            <button
+                              key={label}
+                              onClick={() => {
+                                setSelectedType(label)
+                                setShowTypes(false)
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2 py-2 text-[10px] transition ${
+                                selectedType === label
+                                  ? 'bg-violet-500/[0.07] text-violet-200'
+                                  : 'text-slate-600 hover:bg-white/[0.03] hover:text-slate-300'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <TypeIcon size={12} />
+                                {label}
+                              </span>
+
+                              <span className="text-[9px] text-slate-700">
+                                {count}
+                              </span>
+                            </button>
+                          )
+                        },
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-cyan-400/10 bg-cyan-500/[0.025] p-4">
+                    <div className="flex items-center gap-2">
+                      <Lock
+                        size={15}
+                        className="text-cyan-300"
+                      />
+
+                      <p className="text-xs font-medium text-slate-300">
+                        Memory privacy
+                      </p>
+                    </div>
+
+                    <p className="mt-3 text-[10px] leading-5 text-slate-600">
+                      Memory controls are isolated from the active
+                      conversation and can be managed independently.
+                    </p>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <ShieldCheck
+                        size={12}
+                        className="text-emerald-400"
+                      />
+
+                      <span className="text-[9px] text-emerald-300/70">
+                        Protected storage
+                      </span>
+                    </div>
+                  </div>
+                </aside>
+              </section>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {memoryPendingDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-memory-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-[420px] rounded-2xl border border-white/[0.1] bg-[#081126] p-5 shadow-2xl shadow-black/50">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300">
+                <AlertTriangle size={19} />
+              </div>
+
+              <div className="min-w-0">
+                <h2
+                  id="delete-memory-title"
+                  className="text-sm font-medium text-white"
+                >
+                  Delete this memory?
+                </h2>
+
+                <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                  This will remove the saved memory from Nexus
+                  and cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.018] p-3">
+              <p className="truncate text-xs font-medium text-slate-300">
+                {memoryPendingDelete.title}
+              </p>
+
+              <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-slate-600">
+                {memoryPendingDelete.content}
+              </p>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setMemoryPendingDelete(null)}
+                className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-2.5 text-xs text-slate-400 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmDelete}
+                className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-2.5 text-xs text-red-300 transition hover:bg-red-500/15"
+              >
+                Delete memory
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

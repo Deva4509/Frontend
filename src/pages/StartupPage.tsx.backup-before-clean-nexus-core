@@ -1,0 +1,459 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { motion } from 'framer-motion'
+import * as THREE from 'three'
+import { useNavigationStore } from '../store/navigation'
+
+const BOOT_DURATION = 3800
+const EXIT_DURATION = 500
+
+function EnergyParticles() {
+  const pointsRef = useRef<THREE.Points>(null)
+
+  const { positions, colors } = useMemo(() => {
+    const count = 900
+    const positionArray = new Float32Array(count * 3)
+    const colorArray = new Float32Array(count * 3)
+
+    for (let i = 0; i < count; i += 1) {
+      const radius = 1.5 + Math.random() * 2.5
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+
+      positionArray[i * 3] =
+        radius * Math.sin(phi) * Math.cos(theta)
+
+      positionArray[i * 3 + 1] =
+        radius * Math.sin(phi) * Math.sin(theta)
+
+      positionArray[i * 3 + 2] =
+        radius * Math.cos(phi)
+
+      const cyan = Math.random() > 0.55
+
+      colorArray[i * 3] = cyan ? 0.15 : 0.5
+      colorArray[i * 3 + 1] = cyan ? 0.9 : 0.35
+      colorArray[i * 3 + 2] = 1
+    }
+
+    return {
+      positions: positionArray,
+      colors: colorArray,
+    }
+  }, [])
+
+  useFrame((state, delta) => {
+    if (!pointsRef.current) return
+
+    pointsRef.current.rotation.y += delta * 0.035
+    pointsRef.current.rotation.x =
+      Math.sin(state.clock.elapsedTime * 0.18) * 0.08
+  })
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          args={[colors, 3]}
+        />
+      </bufferGeometry>
+
+      <pointsMaterial
+        size={0.018}
+        vertexColors
+        transparent
+        opacity={0.72}
+        sizeAttenuation
+        depthWrite={false}
+      />
+    </points>
+  )
+}
+
+function OrbitalRing({
+  radius,
+  tube,
+  rotation,
+  speed,
+  color,
+  opacity,
+}: {
+  radius: number
+  tube: number
+  rotation: [number, number, number]
+  speed: number
+  color: string
+  opacity: number
+}) {
+  const ref = useRef<THREE.Mesh>(null)
+
+  useFrame((_, delta) => {
+    if (!ref.current) return
+
+    ref.current.rotation.z += delta * speed
+  })
+
+  return (
+    <mesh
+      ref={ref}
+      rotation={rotation}
+    >
+      <torusGeometry
+        args={[radius, tube, 12, 160]}
+      />
+
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={opacity}
+        toneMapped={false}
+      />
+    </mesh>
+  )
+}
+
+function ScanningRing() {
+  const ref = useRef<THREE.Mesh>(null)
+
+  useFrame((state) => {
+    if (!ref.current) return
+
+    ref.current.rotation.z =
+      state.clock.elapsedTime * 1.8
+
+    const pulse =
+      1 +
+      Math.sin(state.clock.elapsedTime * 3.2) * 0.04
+
+    ref.current.scale.setScalar(pulse)
+  })
+
+  return (
+    <mesh ref={ref}>
+      <torusGeometry
+        args={[1.38, 0.008, 8, 128]}
+      />
+
+      <meshBasicMaterial
+        color="#6ee7ff"
+        transparent
+        opacity={0.9}
+        toneMapped={false}
+      />
+    </mesh>
+  )
+}
+
+function NexusCore() {
+  const coreRef = useRef<THREE.Mesh>(null)
+  const shellRef = useRef<THREE.Mesh>(null)
+  const wireRef = useRef<THREE.Mesh>(null)
+
+  useFrame((state, delta) => {
+    const time = state.clock.elapsedTime
+
+    if (coreRef.current) {
+      const pulse =
+        0.43 +
+        Math.sin(time * 2.4) * 0.045
+
+      coreRef.current.scale.setScalar(pulse)
+
+      coreRef.current.rotation.x += delta * 0.16
+      coreRef.current.rotation.y -= delta * 0.3
+    }
+
+    if (shellRef.current) {
+      const pulse =
+        1 +
+        Math.sin(time * 1.7) * 0.025
+
+      shellRef.current.scale.setScalar(pulse)
+
+      shellRef.current.rotation.x =
+        Math.sin(time * 0.35) * 0.08
+
+      shellRef.current.rotation.y +=
+        delta * 0.12
+    }
+
+    if (wireRef.current) {
+      wireRef.current.rotation.y -= delta * 0.24
+      wireRef.current.rotation.z += delta * 0.07
+    }
+  })
+
+  return (
+    <group>
+      <mesh ref={shellRef}>
+        <icosahedronGeometry args={[1.12, 5]} />
+
+        <meshPhysicalMaterial
+          color="#16083f"
+          emissive="#5526ff"
+          emissiveIntensity={2.7}
+          roughness={0.16}
+          metalness={0.65}
+          transmission={0.08}
+          thickness={1.5}
+          clearcoat={1}
+          clearcoatRoughness={0.1}
+          transparent
+          opacity={0.9}
+          toneMapped={false}
+        />
+      </mesh>
+
+      <mesh ref={wireRef} scale={0.91}>
+        <icosahedronGeometry args={[1.08, 3]} />
+
+        <meshBasicMaterial
+          color="#7048ff"
+          wireframe
+          transparent
+          opacity={0.2}
+          toneMapped={false}
+        />
+      </mesh>
+
+      <mesh ref={coreRef}>
+        <octahedronGeometry args={[1, 4]} />
+
+        <meshPhysicalMaterial
+          color="#e9ecff"
+          emissive="#9d7aff"
+          emissiveIntensity={5}
+          roughness={0.08}
+          metalness={0.2}
+          transmission={0.2}
+          clearcoat={1}
+          toneMapped={false}
+        />
+      </mesh>
+
+      <OrbitalRing
+        radius={1.35}
+        tube={0.012}
+        rotation={[Math.PI / 2.2, 0.15, 0]}
+        speed={0.55}
+        color="#8b5cf6"
+        opacity={0.75}
+      />
+
+      <OrbitalRing
+        radius={1.5}
+        tube={0.009}
+        rotation={[0.9, 0.25, 0.7]}
+        speed={-0.38}
+        color="#22d3ee"
+        opacity={0.62}
+      />
+
+      <OrbitalRing
+        radius={1.68}
+        tube={0.006}
+        rotation={[1.8, -0.35, 0.15]}
+        speed={0.25}
+        color="#7c3aed"
+        opacity={0.38}
+      />
+
+      <ScanningRing />
+
+      <pointLight
+        color="#7447ff"
+        intensity={8}
+        distance={5}
+      />
+
+      <pointLight
+        color="#20e6ff"
+        intensity={5}
+        distance={4}
+        position={[1.5, 0.6, 1]}
+      />
+
+      <pointLight
+        color="#9d7aff"
+        intensity={4}
+        distance={3}
+        position={[-1, -0.8, 0.8]}
+      />
+    </group>
+  )
+}
+
+function OrbCanvas() {
+  return (
+    <Canvas
+      camera={{
+        position: [0, 0, 4.4],
+        fov: 38,
+      }}
+      dpr={[1, 2]}
+      gl={{
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+      }}
+    >
+      <ambientLight intensity={0.12} />
+
+      <EnergyParticles />
+
+      <NexusCore />
+    </Canvas>
+  )
+}
+
+function NexusBackground() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 overflow-hidden select-none"
+    >
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.07 }}
+        transition={{
+          duration: 1.8,
+        }}
+        className="absolute left-[-7vw] top-[25%] whitespace-nowrap text-[clamp(5rem,15vw,15rem)] font-semibold leading-none tracking-[-0.1em] text-white"
+      >
+        NEXUS
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.055 }}
+        transition={{
+          duration: 2,
+          delay: 0.15,
+        }}
+        className="absolute right-[-15vw] top-[53%] whitespace-nowrap text-[clamp(4rem,12vw,12rem)] font-semibold leading-none tracking-[-0.09em] text-violet-100"
+      >
+        INITIALISING
+      </motion.div>
+
+      <div className="absolute left-1/2 top-1/2 h-[48rem] w-[48rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-700/[0.1] blur-[170px]" />
+
+      <div className="absolute left-1/2 top-1/2 h-[25rem] w-[25rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/[0.055] blur-[120px]" />
+
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_8%,#020006_82%)]" />
+
+      <div className="absolute inset-0 opacity-[0.025] [background-image:linear-gradient(rgba(255,255,255,0.6)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.6)_1px,transparent_1px)] [background-size:90px_90px]" />
+
+      <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-violet-400/[0.08] to-transparent" />
+
+      <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-gradient-to-r from-transparent via-cyan-400/[0.06] to-transparent" />
+    </div>
+  )
+}
+
+export default function StartupPage() {
+  const setCurrentView = useNavigationStore(
+    (state) => state.setCurrentView,
+  )
+
+  const setBooted = useNavigationStore(
+    (state) => state.setBooted,
+  )
+
+  const [isExiting, setIsExiting] = useState(false)
+
+  const exitTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setIsExiting(true)
+
+      exitTimerRef.current = window.setTimeout(() => {
+        setBooted(true)
+        setCurrentView('home')
+      }, EXIT_DURATION)
+    }, BOOT_DURATION)
+
+    return () => {
+      window.clearTimeout(timer)
+
+      if (exitTimerRef.current !== null) {
+        window.clearTimeout(exitTimerRef.current)
+      }
+    }
+  }, [setBooted, setCurrentView])
+
+  const canRenderWebGL =
+    typeof window !== 'undefined' &&
+    'ResizeObserver' in window
+
+  return (
+    <motion.section
+      data-testid="nexus-startup"
+      initial={{
+        opacity: 0,
+      }}
+      animate={{
+        opacity: isExiting ? 0 : 1,
+        scale: isExiting ? 1.22 : 1,
+      }}
+      transition={{
+        opacity: {
+          duration: EXIT_DURATION / 1000,
+          ease: [0.76, 0, 0.24, 1],
+        },
+        scale: {
+          duration: EXIT_DURATION / 1000,
+          ease: [0.76, 0, 0.24, 1],
+        },
+      }}
+      className="relative z-10 flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#020006] text-white"
+    >
+      <NexusBackground />
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          scale: 0.55,
+          filter: 'blur(24px)',
+        }}
+        animate={{
+          opacity: 1,
+          scale: isExiting ? 1.3 : 1,
+          filter: 'blur(0px)',
+        }}
+        transition={{
+          opacity: {
+            duration: 1.2,
+            ease: 'easeOut',
+          },
+          scale: {
+            duration: isExiting
+              ? EXIT_DURATION / 1000
+              : 1.7,
+            ease: isExiting
+              ? [0.76, 0, 0.24, 1]
+              : [0.16, 1, 0.3, 1],
+          },
+          filter: {
+            duration: 1.2,
+          },
+        }}
+        className="relative z-20 h-[min(58vw,540px)] w-[min(58vw,540px)]"
+      >
+        {canRenderWebGL ? (
+          <OrbCanvas />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="h-full w-full rounded-full bg-[radial-gradient(circle_at_35%_30%,#a78bfa_0%,#6d28d9_24%,#241052_52%,#020006_78%)] shadow-[0_0_140px_rgba(109,40,217,0.7)]"
+          />
+        )}
+      </motion.div>
+    </motion.section>
+  )
+}
