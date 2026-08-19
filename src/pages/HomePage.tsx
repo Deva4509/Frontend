@@ -299,6 +299,8 @@ export default function HomePage() {
                     setCurrentView('voice')
                   } else if (label === 'Vision') {
                     setCurrentView('vision')
+                  } else if (label === 'Memory') {
+                    setCurrentView('memory')
                   }
                 }}
                 className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition ${

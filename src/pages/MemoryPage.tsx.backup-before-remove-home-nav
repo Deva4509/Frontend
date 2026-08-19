@@ -9,6 +9,7 @@ import {
   Database,
   FileText,
   FolderOpen,
+  Home,
   Lightbulb,
   Lock,
   MessageSquare,
@@ -109,6 +110,7 @@ const memoryTypes: Array<{
 ]
 
 const navigation = [
+  { label: 'Home', icon: Home },
   { label: 'Chat', icon: MessageSquare, view: 'chat' as const },
   { label: 'Voice', icon: Brain, view: 'voice' as const },
   { label: 'Vision', icon: FolderOpen },
