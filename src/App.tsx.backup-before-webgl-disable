@@ -1,0 +1,38 @@
+import { Suspense, lazy } from 'react'
+import HomePage from './pages/HomePage'
+import ChatPage from './pages/ChatPage'
+import StartupPage from './pages/StartupPage'
+import { useNavigationStore } from './store/navigation'
+
+const NexusGLSLBackground = lazy(
+  () => import('./components/background/NexusGLSLBackground'),
+)
+
+export default function App() {
+  const currentView = useNavigationStore(
+    (state) => state.currentView,
+  )
+
+  return (
+    <main className="relative min-h-screen w-full overflow-hidden bg-[#030712] text-white">
+      <Suspense
+        fallback={
+          <div
+            data-testid="nexus-glsl-background-fallback"
+            className="pointer-events-none fixed inset-0 z-0 bg-[#030712]"
+          />
+        }
+      >
+        <NexusGLSLBackground />
+      </Suspense>
+
+      {currentView === 'startup' ? (
+        <StartupPage />
+      ) : currentView === 'chat' ? (
+        <ChatPage />
+      ) : (
+        <HomePage />
+      )}
+    </main>
+  )
+}
