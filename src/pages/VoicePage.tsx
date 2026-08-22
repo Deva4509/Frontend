@@ -5,7 +5,6 @@ import {
   Check,
   ChevronDown,
   Clock3,
-  Home,
   Languages,
   Mic,
   MicOff,
@@ -242,109 +241,12 @@ export default function VoicePage() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(124,58,237,0.16),transparent_28%),radial-gradient(circle_at_70%_70%,rgba(6,182,212,0.09),transparent_32%)]" />
 
       <div className="relative flex min-h-screen">
-        <aside className="hidden w-[252px] shrink-0 flex-col border-r border-white/[0.07] bg-[#050b1d]/90 px-4 py-5 backdrop-blur-2xl lg:flex">
-          <div className="flex items-center gap-3 px-3">
-            <div className="relative flex h-10 w-10 items-center justify-center">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-400 opacity-30 blur-lg" />
-              <span className="relative bg-gradient-to-br from-violet-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-4xl font-bold leading-none text-transparent">
-                N
-              </span>
-            </div>
-
-            <div>
-              <p className="text-[18px] font-medium tracking-[0.12em] text-white">
-                NEXUS AI
-              </p>
-              <p className="text-[11px] text-slate-500">
-                Your Intelligent Assistant
-              </p>
-            </div>
-          </div>
-
-          <nav className="mt-7 space-y-1">
-            <button
-              onClick={() => setCurrentView('home')}
-              className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-200"
-            >
-              <Home size={17} />
-              <span>Home</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentView('chat')}
-              className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-200"
-            >
-              <Bot size={17} />
-              <span>Chat</span>
-            </button>
-
-            <button className="flex h-10 w-full items-center gap-3 rounded-xl border border-violet-400/40 bg-gradient-to-r from-violet-600/45 to-violet-500/20 px-3 text-left text-sm text-white shadow-[0_0_25px_rgba(124,58,237,0.16)]">
-              <Volume2 size={17} />
-              <span>Voice</span>
-            </button>
-
-            {[
-              'Vision',
-              'Automation',
-              'Memory',
-              'Planner',
-              'Devices',
-              'Plugins',
-              'Skills',
-              'Files',
-              'Analytics',
-            ].map((item) => (
-              <button
-                key={item}
-                className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-300"
-              >
-                <Sparkles size={15} />
-                <span>{item}</span>
-              </button>
-            ))}
-          </nav>
-
-          <div className="mt-auto">
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-300 to-blue-500 text-xs font-bold text-white">
-                  R
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-white">
-                    Rudraksh
-                  </p>
-
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    <span className="text-[10px] text-slate-500">
-                      Online
-                    </span>
-                  </div>
-                </div>
-
-                <Settings size={15} className="text-slate-600" />
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between border-t border-white/[0.05] px-1 pt-4 text-[10px] text-slate-600">
-              <span>Nexus AI</span>
-              <span>Voice Engine</span>
-            </div>
-          </div>
-        </aside>
+        
 
         <main className="min-w-0 flex-1">
           <header className="flex h-[70px] items-center justify-between border-b border-white/[0.06] px-4 sm:px-6">
             <div className="flex items-center gap-3">
-              <button
-                aria-label="Back"
-                onClick={() => setCurrentView('home')}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.07] text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
-              >
-                <ArrowLeft size={17} />
-              </button>
+              
 
               <div>
                 <p className="text-sm font-medium text-white">

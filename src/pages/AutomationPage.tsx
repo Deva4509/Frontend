@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Clock3,
   Edit3,
-  Home,
   MoreVertical,
   Pause,
   Play,
@@ -73,7 +72,6 @@ const initialAutomations: Automation[] = [
 ]
 
 const navigation = [
-  { label: 'Home', icon: Home, view: 'home' as const },
   { label: 'Chat', icon: Sparkles, view: 'chat' as const },
   { label: 'Voice', icon: Zap, view: 'voice' as const },
   { label: 'Vision', icon: WandSparkles, view: 'vision' as const },
@@ -143,88 +141,11 @@ export default function AutomationPage() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_20%,rgba(124,58,237,0.13),transparent_28%),radial-gradient(circle_at_78%_72%,rgba(6,182,212,0.08),transparent_30%)]" />
 
       <div className="relative flex min-h-screen">
-        <aside className="hidden w-[252px] shrink-0 flex-col border-r border-white/[0.07] bg-[#050b1d]/95 px-4 py-5 backdrop-blur-2xl lg:flex">
-          <div className="flex items-center gap-3 px-3">
-            <div className="relative flex h-10 w-10 items-center justify-center">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-400 opacity-30 blur-lg" />
-
-              <span className="relative bg-gradient-to-br from-violet-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-4xl font-bold leading-none text-transparent">
-                N
-              </span>
-            </div>
-
-            <div>
-              <p className="text-[18px] font-medium tracking-[0.12em] text-white">
-                NEXUS AI
-              </p>
-
-              <p className="text-[11px] text-slate-500">
-                Automation Workspace
-              </p>
-            </div>
-          </div>
-
-          <nav className="mt-7 space-y-1">
-            {navigation.map(
-              ({ label, icon: Icon, active, view }) => (
-                <button
-                  key={label}
-                  aria-label={label}
-                  onClick={() => {
-                    if (view) {
-                      setCurrentView(view)
-                    }
-                  }}
-                  className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition ${
-                    active
-                      ? 'border border-violet-400/40 bg-gradient-to-r from-violet-600/45 to-violet-500/20 text-white shadow-[0_0_25px_rgba(124,58,237,0.16)]'
-                      : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
-                  }`}
-                >
-                  <Icon size={17} />
-                  <span>{label}</span>
-                </button>
-              ),
-            )}
-
-            <button
-              aria-label="Settings"
-              className="mt-1 flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-200"
-            >
-              <Settings size={17} />
-              <span>Settings</span>
-            </button>
-          </nav>
-
-          <div className="mt-auto rounded-xl border border-white/[0.06] bg-slate-950/45 p-3">
-            <div className="flex items-center gap-2">
-              <ShieldCheck
-                size={16}
-                className="text-emerald-400"
-              />
-
-              <span className="text-xs text-slate-300">
-                Automation protection active
-              </span>
-            </div>
-
-            <p className="mt-2 text-[10px] leading-5 text-slate-600">
-              Automated actions are isolated from your active
-              conversations and can be managed independently.
-            </p>
-          </div>
-        </aside>
+        
 
         <main className="min-w-0 flex-1">
           <header className="flex h-[70px] items-center gap-4 border-b border-white/[0.06] px-4 sm:px-6 lg:px-8">
-            <button
-              onClick={() => setCurrentView('home')}
-              aria-label="Back to Home"
-              className="flex h-9 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-xs text-slate-400 transition hover:border-violet-400/25 hover:text-white"
-            >
-              <ArrowLeft size={16} />
-              <span className="hidden sm:inline">Home</span>
-            </button>
+            
 
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-300">

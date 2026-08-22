@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowLeft,
+  AlertTriangle,
   Brain,
   Check,
   ChevronDown,
@@ -8,7 +8,6 @@ import {
   Database,
   FileText,
   FolderOpen,
-  Home,
   Lightbulb,
   Lock,
   MessageSquare,
@@ -19,8 +18,13 @@ import {
   Tag,
   Trash2,
   User,
+  X,
 } from 'lucide-react'
-import { useMemoryStore, type MemoryItem, type MemoryType } from '../store/memory'
+import {
+  useMemoryStore,
+  type MemoryItem,
+  type MemoryType,
+} from '../store/memory'
 import { useNavigationStore } from '../store/navigation'
 
 const initialMemories: MemoryItem[] = [
@@ -104,7 +108,6 @@ const memoryTypes: Array<{
 ]
 
 const navigation = [
-  { label: 'Home', icon: Home },
   { label: 'Chat', icon: MessageSquare, view: 'chat' as const },
   { label: 'Voice', icon: Brain, view: 'voice' as const },
   { label: 'Vision', icon: FolderOpen },
@@ -117,6 +120,52 @@ const navigation = [
   { label: 'Files', icon: FolderOpen },
   { label: 'Analytics', icon: Database },
 ]
+
+const typeStyles: Record<
+  MemoryType,
+  {
+    icon: typeof Brain
+    iconClass: string
+    badgeClass: string
+    accentClass: string
+  }
+> = {
+  Conversation: {
+    icon: MessageSquare,
+    iconClass: 'bg-blue-500/10 text-blue-300',
+    badgeClass:
+      'border-blue-400/10 bg-blue-500/[0.06] text-blue-300',
+    accentClass: 'bg-blue-400',
+  },
+  Preference: {
+    icon: User,
+    iconClass: 'bg-violet-500/10 text-violet-300',
+    badgeClass:
+      'border-violet-400/10 bg-violet-500/[0.06] text-violet-300',
+    accentClass: 'bg-violet-400',
+  },
+  Fact: {
+    icon: Lightbulb,
+    iconClass: 'bg-cyan-500/10 text-cyan-300',
+    badgeClass:
+      'border-cyan-400/10 bg-cyan-500/[0.06] text-cyan-300',
+    accentClass: 'bg-cyan-400',
+  },
+  Task: {
+    icon: Check,
+    iconClass: 'bg-emerald-500/10 text-emerald-300',
+    badgeClass:
+      'border-emerald-400/10 bg-emerald-500/[0.06] text-emerald-300',
+    accentClass: 'bg-emerald-400',
+  },
+  Note: {
+    icon: FileText,
+    iconClass: 'bg-amber-500/10 text-amber-300',
+    badgeClass:
+      'border-amber-400/10 bg-amber-500/[0.06] text-amber-300',
+    accentClass: 'bg-amber-400',
+  },
+}
 
 export default function MemoryPage() {
   const setCurrentView = useNavigationStore(
@@ -146,11 +195,16 @@ export default function MemoryPage() {
   const setSelectedType = useMemoryStore(
     (state) => state.setSelectedType,
   )
+  const clearFilters = useMemoryStore(
+    (state) => state.clearFilters,
+  )
   const deleteMemory = useMemoryStore(
     (state) => state.deleteMemory,
   )
 
   const [showTypes, setShowTypes] = useState(false)
+  const [memoryPendingDelete, setMemoryPendingDelete] =
+    useState<MemoryItem | null>(null)
 
   useEffect(() => {
     if (memories.length === 0) {
@@ -187,95 +241,35 @@ export default function MemoryPage() {
       (memory) => memory.id === selectedMemoryId,
     ) ?? filteredMemories[0]
 
-  const goHome = () => {
-    setCurrentView('home')
+  const activeFilterCount =
+    Number(Boolean(searchQuery.trim())) +
+    Number(selectedType !== 'All')
+
+  const importantCount = memories.filter(
+    (memory) => memory.important,
+  ).length
+
+  const typeCount = (type: MemoryType) =>
+    memories.filter((memory) => memory.type === type).length
+
+  const confirmDelete = () => {
+    if (!memoryPendingDelete) {
+      return
+    }
+
+    deleteMemory(memoryPendingDelete.id)
+    setMemoryPendingDelete(null)
   }
 
   return (
     <div className="relative z-[1] min-h-screen w-full overflow-hidden bg-[#030712] text-slate-100">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_52%_20%,rgba(124,58,237,0.13),transparent_28%),radial-gradient(circle_at_75%_75%,rgba(6,182,212,0.07),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_20%,rgba(124,58,237,0.13),transparent_28%),radial-gradient(circle_at_75%_75%,rgba(6,182,212,0.07),transparent_30%)]" />
 
       <div className="relative flex min-h-screen">
-        <aside className="hidden w-[252px] shrink-0 flex-col border-r border-white/[0.07] bg-[#050b1d]/95 px-4 py-5 backdrop-blur-2xl lg:flex">
-          <div className="flex items-center gap-3 px-3">
-            <div className="relative flex h-10 w-10 items-center justify-center">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-400 opacity-30 blur-lg" />
-              <span className="relative bg-gradient-to-br from-violet-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-4xl font-bold leading-none text-transparent">
-                N
-              </span>
-            </div>
-
-            <div>
-              <p className="text-[18px] font-medium tracking-[0.12em] text-white">
-                NEXUS AI
-              </p>
-              <p className="text-[11px] text-slate-500">
-                Memory Workspace
-              </p>
-            </div>
-          </div>
-
-          <nav className="mt-7 space-y-1">
-            {navigation.map(
-              ({ label, icon: Icon, active, view }) => (
-                <button
-                  key={label}
-                  aria-label={label}
-                  onClick={() => {
-                    if (view) {
-                      setCurrentView(view)
-                    } else if (label === 'Home') {
-                      setCurrentView('home')
-                    } else if (label === 'Memory') {
-                      setCurrentView('memory')
-                    }
-                  }}
-                  className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition ${
-                    active
-                      ? 'border border-violet-400/40 bg-gradient-to-r from-violet-600/45 to-violet-500/20 text-white shadow-[0_0_25px_rgba(124,58,237,0.16)]'
-                      : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
-                  }`}
-                >
-                  <Icon size={17} />
-                  <span>{label}</span>
-                </button>
-              ),
-            )}
-
-            <button
-              aria-label="Settings"
-              className="mt-1 flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-200"
-            >
-              <Settings size={17} />
-              <span>Settings</span>
-            </button>
-          </nav>
-
-          <div className="mt-auto rounded-xl border border-white/[0.06] bg-slate-950/45 p-3">
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={16} className="text-emerald-400" />
-              <span className="text-xs text-slate-300">
-                Memory protection active
-              </span>
-            </div>
-
-            <p className="mt-2 text-[10px] leading-5 text-slate-600">
-              Your saved context remains available to Nexus
-              across conversations.
-            </p>
-          </div>
-        </aside>
+        
 
         <main className="min-w-0 flex-1">
           <header className="flex h-[70px] items-center gap-4 border-b border-white/[0.06] px-4 sm:px-6 lg:px-8">
-            <button
-              onClick={goHome}
-              aria-label="Back to Home"
-              className="flex h-9 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-xs text-slate-400 transition hover:border-violet-400/25 hover:text-white"
-            >
-              <ArrowLeft size={16} />
-              <span className="hidden sm:inline">Home</span>
-            </button>
 
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-300">
@@ -300,7 +294,7 @@ export default function MemoryPage() {
 
               <button
                 aria-label="Memory settings"
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-slate-500 transition hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-slate-500 transition hover:border-white/[0.12] hover:bg-white/[0.04] hover:text-white"
               >
                 <Settings size={16} />
               </button>
@@ -308,24 +302,42 @@ export default function MemoryPage() {
           </header>
 
           <div className="h-[calc(100vh-70px)] overflow-y-auto">
-            <div className="mx-auto max-w-[1450px] px-4 pb-8 pt-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-[1450px] px-4 pb-10 pt-6 sm:px-6 lg:px-8">
               <section className="mb-5">
-                <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-cyan-300/70">
-                  Persistent intelligence
-                </p>
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-cyan-300/70">
+                      Persistent intelligence
+                    </p>
 
-                <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
-                  Nexus Memory
-                </h1>
+                    <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
+                      Nexus Memory
+                    </h1>
 
-                <p className="mt-2 max-w-[700px] text-sm leading-6 text-slate-500">
-                  Review, search and manage the information Nexus
-                  keeps available for future conversations.
-                </p>
+                    <p className="mt-2 max-w-[700px] text-sm leading-6 text-slate-500">
+                      Review, search and manage the information
+                      Nexus keeps available for future
+                      conversations.
+                    </p>
+                  </div>
+
+                  <div className="hidden rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 sm:block">
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                      </span>
+
+                      <span className="text-[10px] text-slate-500">
+                        Memory system online
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </section>
 
-              <section className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4">
+              <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="group rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4 transition-colors hover:border-violet-400/15">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
                       <Brain size={19} />
@@ -342,10 +354,27 @@ export default function MemoryPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4">
+                <div className="group rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4 transition-colors hover:border-amber-400/15">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-300">
+                      <Sparkles size={19} />
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-500">
+                        Important
+                      </p>
+                      <p className="mt-0.5 text-xl font-medium text-white">
+                        {importantCount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="group rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4 transition-colors hover:border-cyan-400/15">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300">
-                      <Sparkles size={19} />
+                      <Database size={19} />
                     </div>
 
                     <div>
@@ -359,7 +388,7 @@ export default function MemoryPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4">
+                <div className="group rounded-2xl border border-white/[0.08] bg-slate-950/55 p-4 transition-colors hover:border-emerald-400/15">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
                       <ShieldCheck size={19} />
@@ -392,17 +421,33 @@ export default function MemoryPage() {
                         onChange={(event) =>
                           setSearchQuery(event.target.value)
                         }
-                        placeholder="Search memories..."
-                        className="h-11 w-full rounded-xl border border-white/[0.07] bg-white/[0.02] pl-9 pr-3 text-xs text-white outline-none placeholder:text-slate-600 focus:border-violet-400/30"
+                        placeholder="Search memories, tags, sources..."
+                        className="h-11 w-full rounded-xl border border-white/[0.07] bg-white/[0.02] pl-9 pr-9 text-xs text-white outline-none transition-all placeholder:text-slate-600 focus:border-violet-400/30 focus:bg-violet-500/[0.025]"
                       />
+
+                      {searchQuery && (
+                        <button
+                          aria-label="Clear memory search"
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-600 transition hover:bg-white/[0.05] hover:text-slate-300"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
                     </div>
 
                     <div className="relative">
                       <button
+                        aria-haspopup="listbox"
+                        aria-expanded={showTypes}
                         onClick={() =>
                           setShowTypes((current) => !current)
                         }
-                        className="flex h-11 min-w-[170px] items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 text-xs text-slate-300"
+                        className={`flex h-11 min-w-[170px] items-center justify-between gap-3 rounded-xl border px-3 text-xs transition-all ${
+                          selectedType !== 'All'
+                            ? 'border-violet-400/25 bg-violet-500/[0.06] text-violet-200'
+                            : 'border-white/[0.07] bg-white/[0.02] text-slate-300 hover:border-white/[0.11]'
+                        }`}
                       >
                         <span>
                           {selectedType === 'All'
@@ -412,117 +457,214 @@ export default function MemoryPage() {
 
                         <ChevronDown
                           size={15}
-                          className="text-slate-600"
+                          className={`text-slate-600 transition-transform ${
+                            showTypes ? 'rotate-180' : ''
+                          }`}
                         />
                       </button>
 
                       {showTypes && (
-                        <div className="absolute right-0 top-12 z-20 w-[210px] overflow-hidden rounded-xl border border-white/[0.08] bg-[#09132c] shadow-2xl">
-                          {[
-                            'All',
-                            ...memoryTypes.map(
-                              (item) => item.label,
-                            ),
-                          ].map((type) => (
-                            <button
-                              key={type}
-                              onClick={() => {
-                                setSelectedType(
-                                  type as MemoryType | 'All',
-                                )
-                                setShowTypes(false)
-                              }}
-                              className="flex w-full items-center justify-between px-3 py-3 text-xs text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
-                            >
-                              {type}
+                        <div className="absolute right-0 top-12 z-30 w-[220px] overflow-hidden rounded-xl border border-white/[0.08] bg-[#09132c] p-1 shadow-2xl shadow-black/40">
+                          <button
+                            onClick={() => {
+                              setSelectedType('All')
+                              setShowTypes(false)
+                            }}
+                            className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
+                          >
+                            <span>All memory types</span>
 
-                              {type === selectedType && (
-                                <Check
-                                  size={14}
-                                  className="text-cyan-300"
-                                />
-                              )}
-                            </button>
-                          ))}
+                            {selectedType === 'All' && (
+                              <Check
+                                size={14}
+                                className="text-cyan-300"
+                              />
+                            )}
+                          </button>
+
+                          {memoryTypes.map(
+                            ({
+                              label,
+                              icon: TypeIcon,
+                            }) => (
+                              <button
+                                key={label}
+                                onClick={() => {
+                                  setSelectedType(label)
+                                  setShowTypes(false)
+                                }}
+                                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <TypeIcon size={13} />
+                                  {label}
+                                </span>
+
+                                {label === selectedType && (
+                                  <Check
+                                    size={14}
+                                    className="text-cyan-300"
+                                  />
+                                )}
+                              </button>
+                            ),
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="mt-5 space-y-2">
+                  <div className="mt-4 flex min-h-6 items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] text-slate-600">
+                        {filteredMemories.length} of{' '}
+                        {memories.length} memories
+                      </span>
+
+                      {activeFilterCount > 0 && (
+                        <span className="rounded-md border border-violet-400/10 bg-violet-500/[0.06] px-1.5 py-0.5 text-[8px] text-violet-300">
+                          {activeFilterCount}{' '}
+                          {activeFilterCount === 1
+                            ? 'filter'
+                            : 'filters'}{' '}
+                          active
+                        </span>
+                      )}
+                    </div>
+
+                    {activeFilterCount > 0 && (
+                      <button
+                        onClick={clearFilters}
+                        className="text-[10px] text-slate-600 transition hover:text-violet-300"
+                      >
+                        Clear filters
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-3 space-y-2">
                     {filteredMemories.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-white/[0.08] px-4 py-10 text-center">
-                        <Brain
-                          size={22}
-                          className="mx-auto text-slate-700"
-                        />
+                      <div className="rounded-2xl border border-dashed border-white/[0.08] px-4 py-12 text-center">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+                          <Search
+                            size={21}
+                            className="text-slate-700"
+                          />
+                        </div>
 
-                        <p className="mt-3 text-sm text-slate-500">
-                          No memories found.
+                        <p className="mt-4 text-sm font-medium text-slate-400">
+                          No memories found
                         </p>
 
-                        <p className="mt-1 text-[10px] text-slate-700">
-                          Try another search or memory type.
+                        <p className="mx-auto mt-1 max-w-[280px] text-[10px] leading-5 text-slate-700">
+                          {searchQuery.trim()
+                            ? `Nothing matches "${searchQuery.trim()}".`
+                            : 'No memories match the selected type.'}
                         </p>
+
+                        {activeFilterCount > 0 && (
+                          <button
+                            onClick={clearFilters}
+                            className="mt-4 rounded-lg border border-violet-400/15 bg-violet-500/[0.06] px-3 py-2 text-[10px] text-violet-300 transition hover:bg-violet-500/[0.1]"
+                          >
+                            Clear filters
+                          </button>
+                        )}
                       </div>
                     ) : (
-                      filteredMemories.map((memory) => (
-                        <button
-                          key={memory.id}
-                          onClick={() =>
-                            setSelectedMemoryId(memory.id)
-                          }
-                          className={`w-full rounded-xl border p-4 text-left transition ${
-                            memory.id === selectedMemoryId
-                              ? 'border-violet-400/20 bg-violet-500/[0.07]'
-                              : 'border-white/[0.06] bg-white/[0.015] hover:border-white/[0.1] hover:bg-white/[0.025]'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-                              <Brain size={16} />
-                            </div>
+                      filteredMemories.map((memory) => {
+                        const style =
+                          typeStyles[memory.type]
+                        const TypeIcon = style.icon
+                        const isSelected =
+                          memory.id === selectedMemoryId
 
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="truncate text-xs font-medium text-slate-200">
-                                  {memory.title}
+                        return (
+                          <button
+                            key={memory.id}
+                            onClick={() =>
+                              setSelectedMemoryId(memory.id)
+                            }
+                            className={`group relative w-full overflow-hidden rounded-xl border p-4 text-left transition-all duration-200 ${
+                              isSelected
+                                ? 'border-violet-400/25 bg-violet-500/[0.07] shadow-[0_8px_30px_rgba(124,58,237,0.07)]'
+                                : 'border-white/[0.06] bg-white/[0.015] hover:border-white/[0.11] hover:bg-white/[0.025]'
+                            }`}
+                          >
+                            <span
+                              className={`absolute bottom-3 left-0 top-3 w-px rounded-full opacity-0 transition-opacity ${
+                                style.accentClass
+                              } ${
+                                isSelected
+                                  ? 'opacity-100'
+                                  : 'group-hover:opacity-60'
+                              }`}
+                            />
+
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.iconClass}`}
+                              >
+                                <TypeIcon size={17} />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2 pr-2">
+                                  <p className="truncate text-xs font-medium text-slate-200">
+                                    {memory.title}
+                                  </p>
+
+                                  {memory.important && (
+                                    <span className="rounded-md border border-amber-400/10 bg-amber-400/[0.06] px-1.5 py-0.5 text-[8px] font-medium text-amber-300">
+                                      Important
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-slate-500">
+                                  {memory.content}
                                 </p>
 
-                                {memory.important && (
-                                  <span className="rounded-md bg-amber-400/10 px-1.5 py-0.5 text-[8px] text-amber-300">
-                                    Important
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                  <span
+                                    className={`rounded-md border px-1.5 py-0.5 text-[8px] ${style.badgeClass}`}
+                                  >
+                                    {memory.type}
                                   </span>
-                                )}
+
+                                  {memory.tags
+                                    .slice(0, 4)
+                                    .map((tag) => (
+                                      <span
+                                        key={tag}
+                                        className="flex items-center gap-1 text-[8px] text-slate-700"
+                                      >
+                                        <Tag size={9} />
+                                        {tag}
+                                      </span>
+                                    ))}
+
+                                  {memory.tags.length > 4 && (
+                                    <span className="text-[8px] text-slate-700">
+                                      +{memory.tags.length - 4}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
 
-                              <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-slate-500">
-                                {memory.content}
-                              </p>
-
-                              <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <span className="rounded-md border border-white/[0.05] bg-white/[0.02] px-1.5 py-0.5 text-[8px] text-slate-600">
-                                  {memory.type}
+                              <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
+                                <span className="text-[9px] text-slate-700">
+                                  {memory.created}
                                 </span>
 
-                                {memory.tags.map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="flex items-center gap-1 text-[8px] text-slate-700"
-                                  >
-                                    <Tag size={9} />
-                                    {tag}
-                                  </span>
-                                ))}
+                                {isSelected && (
+                                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-violet-300 shadow-[0_0_8px_rgba(167,139,250,0.8)]" />
+                                )}
                               </div>
                             </div>
-
-                            <span className="hidden shrink-0 text-[9px] text-slate-700 sm:block">
-                              {memory.created}
-                            </span>
-                          </div>
-                        </button>
-                      ))
+                          </button>
+                        )
+                      })
                     )}
                   </div>
                 </div>
@@ -531,12 +673,39 @@ export default function MemoryPage() {
                   {selectedMemory ? (
                     <div className="rounded-2xl border border-white/[0.08] bg-slate-950/55 p-5">
                       <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-600">
-                            Memory detail
-                          </p>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              const style =
+                                typeStyles[selectedMemory.type]
+                              const TypeIcon = style.icon
 
-                          <h2 className="mt-2 text-lg font-medium text-white">
+                              return (
+                                <div
+                                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${style.iconClass}`}
+                                >
+                                  <TypeIcon size={15} />
+                                </div>
+                              )
+                            })()}
+
+                            <div className="min-w-0">
+                              <p className="text-[9px] uppercase tracking-[0.18em] text-slate-600">
+                                Memory detail
+                              </p>
+                              <span
+                                className={`mt-1 inline-flex rounded-md border px-1.5 py-0.5 text-[8px] ${
+                                  typeStyles[
+                                    selectedMemory.type
+                                  ].badgeClass
+                                }`}
+                              >
+                                {selectedMemory.type}
+                              </span>
+                            </div>
+                          </div>
+
+                          <h2 className="mt-4 text-lg font-medium leading-6 text-white">
                             {selectedMemory.title}
                           </h2>
                         </div>
@@ -544,31 +713,36 @@ export default function MemoryPage() {
                         <button
                           aria-label="Delete memory"
                           onClick={() =>
-                            deleteMemory(selectedMemory.id)
+                            setMemoryPendingDelete(
+                              selectedMemory,
+                            )
                           }
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-red-500/10 hover:text-red-300"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-red-500/10 hover:text-red-300"
                         >
                           <Trash2 size={15} />
                         </button>
                       </div>
 
-                      <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
+                      {selectedMemory.important && (
+                        <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber-400/10 bg-amber-400/[0.045] px-3 py-2">
+                          <Sparkles
+                            size={13}
+                            className="text-amber-300"
+                          />
+
+                          <span className="text-[10px] text-amber-200/80">
+                            Marked as important context
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
                         <p className="text-xs leading-6 text-slate-400">
                           {selectedMemory.content}
                         </p>
                       </div>
 
                       <div className="mt-4 grid grid-cols-2 gap-2">
-                        <div className="rounded-xl border border-white/[0.05] bg-white/[0.015] p-3">
-                          <p className="text-[9px] text-slate-700">
-                            Type
-                          </p>
-
-                          <p className="mt-1 text-xs text-slate-300">
-                            {selectedMemory.type}
-                          </p>
-                        </div>
-
                         <div className="rounded-xl border border-white/[0.05] bg-white/[0.015] p-3">
                           <p className="text-[9px] text-slate-700">
                             Source
@@ -578,31 +752,118 @@ export default function MemoryPage() {
                             {selectedMemory.source}
                           </p>
                         </div>
-                      </div>
 
-                      <div className="mt-3 rounded-xl border border-white/[0.05] bg-white/[0.015] p-3">
-                        <div className="flex items-center gap-2 text-[10px] text-slate-600">
-                          <Clock3 size={12} />
-                          Created {selectedMemory.created}
+                        <div className="rounded-xl border border-white/[0.05] bg-white/[0.015] p-3">
+                          <p className="text-[9px] text-slate-700">
+                            Created
+                          </p>
+
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-300">
+                            <Clock3 size={11} />
+                            {selectedMemory.created}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {selectedMemory.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded-lg border border-violet-400/10 bg-violet-500/[0.05] px-2 py-1 text-[9px] text-violet-300"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
+                      <div className="mt-3 rounded-xl border border-white/[0.05] bg-white/[0.015] p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[9px] text-slate-700">
+                            Tags
+                          </p>
+
+                          <Tag
+                            size={11}
+                            className="text-slate-700"
+                          />
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {selectedMemory.tags.length > 0 ? (
+                            selectedMemory.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-lg border border-violet-400/10 bg-violet-500/[0.05] px-2 py-1 text-[9px] text-violet-300"
+                              >
+                                #{tag}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[9px] text-slate-700">
+                              No tags
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-white/[0.08] bg-slate-950/35 p-8 text-center">
+                      <Brain
+                        size={22}
+                        className="mx-auto text-slate-700"
+                      />
+
+                      <p className="mt-3 text-xs text-slate-500">
+                        Select a memory
+                      </p>
+
+                      <p className="mt-1 text-[10px] leading-5 text-slate-700">
+                        Choose an item from the memory collection
+                        to inspect its details.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl border border-white/[0.07] bg-slate-950/45 p-4">
+                    <div className="flex items-center gap-2">
+                      <Database
+                        size={15}
+                        className="text-violet-300"
+                      />
+
+                      <p className="text-xs font-medium text-slate-300">
+                        Memory categories
+                      </p>
+                    </div>
+
+                    <div className="mt-3 space-y-1.5">
+                      {memoryTypes.map(
+                        ({ label, icon: TypeIcon }) => {
+                          const count = typeCount(label)
+
+                          return (
+                            <button
+                              key={label}
+                              onClick={() => {
+                                setSelectedType(label)
+                                setShowTypes(false)
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2 py-2 text-[10px] transition ${
+                                selectedType === label
+                                  ? 'bg-violet-500/[0.07] text-violet-200'
+                                  : 'text-slate-600 hover:bg-white/[0.03] hover:text-slate-300'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <TypeIcon size={12} />
+                                {label}
+                              </span>
+
+                              <span className="text-[9px] text-slate-700">
+                                {count}
+                              </span>
+                            </button>
+                          )
+                        },
+                      )}
+                    </div>
+                  </div>
 
                   <div className="rounded-2xl border border-cyan-400/10 bg-cyan-500/[0.025] p-4">
                     <div className="flex items-center gap-2">
-                      <Lock size={15} className="text-cyan-300" />
+                      <Lock
+                        size={15}
+                        className="text-cyan-300"
+                      />
 
                       <p className="text-xs font-medium text-slate-300">
                         Memory privacy
@@ -613,6 +874,17 @@ export default function MemoryPage() {
                       Memory controls are isolated from the active
                       conversation and can be managed independently.
                     </p>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <ShieldCheck
+                        size={12}
+                        className="text-emerald-400"
+                      />
+
+                      <span className="text-[9px] text-emerald-300/70">
+                        Protected storage
+                      </span>
+                    </div>
                   </div>
                 </aside>
               </section>
@@ -620,6 +892,63 @@ export default function MemoryPage() {
           </div>
         </main>
       </div>
+
+      {memoryPendingDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-memory-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-[420px] rounded-2xl border border-white/[0.1] bg-[#081126] p-5 shadow-2xl shadow-black/50">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300">
+                <AlertTriangle size={19} />
+              </div>
+
+              <div className="min-w-0">
+                <h2
+                  id="delete-memory-title"
+                  className="text-sm font-medium text-white"
+                >
+                  Delete this memory?
+                </h2>
+
+                <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                  This will remove the saved memory from Nexus
+                  and cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.018] p-3">
+              <p className="truncate text-xs font-medium text-slate-300">
+                {memoryPendingDelete.title}
+              </p>
+
+              <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-slate-600">
+                {memoryPendingDelete.content}
+              </p>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setMemoryPendingDelete(null)}
+                className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-2.5 text-xs text-slate-400 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmDelete}
+                className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-2.5 text-xs text-red-300 transition hover:bg-red-500/15"
+              >
+                Delete memory
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

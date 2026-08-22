@@ -120,14 +120,7 @@ export default function VisionPage() {
       <div className="mx-auto min-h-screen w-full max-w-[1800px] px-4 py-4 sm:px-6 lg:px-8">
         <header className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setCurrentView('home')}
-              aria-label="Back to home"
-              className="rounded-xl border border-white/10 bg-white/[0.04] p-2.5 text-white/70 transition hover:border-cyan-400/30 hover:bg-cyan-400/10 hover:text-white"
-            >
-              <ArrowLeft size={19} />
-            </button>
+            
 
             <div>
               <div className="flex items-center gap-2">
